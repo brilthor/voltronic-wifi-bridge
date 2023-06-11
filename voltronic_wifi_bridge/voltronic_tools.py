@@ -18,7 +18,7 @@ def cal_crc_half(message, length=None, string_is_hex=False):
         crc = crc & 0xFFFF
         da = crc.to_bytes(2)[0] >> 4
         crc = crc << 4
-        crc = crc  ^ crc_ta[da^(b & 0x0f)]
+        crc = crc ^ crc_ta[da^(b & 0x0f)]
 
         # cut off anything about the two bytes
         crc = crc & 0xFFFF
@@ -26,8 +26,8 @@ def cal_crc_half(message, length=None, string_is_hex=False):
     # aviod special characters in the protocol (, CR, LF
     # I'm sure this could be cleaner
     crcbytes = crc.to_bytes(2)
-    for index in [0,1]:
+    for index in [0, 1]:
         if crcbytes[index] in [0x28, 0x0d, 0x0a]:
-            crc += (0x100 ** index)
+            crc += (0x100 ** (1-index))
     crcbytes = crc.to_bytes(2)
     return crcbytes
