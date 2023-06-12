@@ -31,6 +31,15 @@ options:
 There is and included dockerfile and docker compose to build and run the service inside docker
 
 
+## Compatible Hardware
+Many Voltronic inverters use very similar protocols.  Yours may work automatically or might need minor tweaking.  Feel free to let the project know if you test it with other hardware.
+
+| Brand | Model | Firmware Versions | Compatibility |
+| ---- | ---- | ---- | ---- |
+| Maple Leaf Power Systems | 6500EX-48 | 00069.05/00012.21 | Works |
+
+
+
 ## TODO features (PRs welcome)
  - auto-reg home assistant mqtt
  - feed data to influxdb (multiple versions?)
