@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  bridge:
+    build: .
+    ports:
+      - 3502:502
+    command: ["voltronic-wifi-bridge", "<mqtthostname>", "<mqttport>"]
