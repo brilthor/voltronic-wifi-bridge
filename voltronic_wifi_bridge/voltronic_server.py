@@ -20,7 +20,7 @@ class Query():
         "3": "unknown 3"
     }
     _charger_source_priority_map = {
-        "0": "utility_first", # charge from solar when exists, utility when not
+        "0": "utility_first", # charge from utility when exists, solar when not
         "1": "solar_first", # charge from solar when exists, utility when not
         "2": "solar_and_utility", # charge from solar and utility at the same time
         "3": "only_solar", # only charge from solar
@@ -200,7 +200,7 @@ class QueryPIRI(Query):
                 "parrallel_max_num": values_array[18], # from docs: 0: utility first 1: solar first 2: solar + utility 3: only solar charging first should check this on my unit  
                 "machine_type": values_array[19], # from docs: 00: grid_tie 01: off_grid 10: hybrid  
                 "topology": values_array[20], # from docs: 0: transformerless 1: transformer
-                "output_mode": values_array[21], # from docs: 00: single 01: parallel 02: Phase 1 of 3 03: Phase 2 of 3 04: Phase 3 of 3  7 would be phase 2 of 2 180* 
+                "output_mode": values_array[21], # from docs: 00: single 01: parallel 02: Phase 1 of 3 03: Phase 2 of 3 04: Phase 3 of 3  5 would be phase 1 of 2 7 would be phase 2 of 2 180* 
                 "battery_redischarge_voltage": values_array[22],  # 53.0
                 "pv_ok_condition_for_parallel": values_array[23],  # 0: pv is ok if any inverter has solar  1: all inverters must have PV for solar
                 "pv_power_balance": values_array[24],  # 0: pv max input is charge current  1: pv input is the max charge power + current load
