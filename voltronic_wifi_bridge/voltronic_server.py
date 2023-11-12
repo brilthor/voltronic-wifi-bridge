@@ -210,6 +210,7 @@ class QueryPIRI(Query):
             }
             pprint.pprint(values)
             keys_to_send =  ["battery_recharge_voltage", "max_ac_charging_current", "current_max_charging_current", "output_source_priority", "charger_source_priority", "output_mode"]
+            # keys_to_send.extend ([ "25", "26", "27"])
             self._publish_mqtt_from_dict(values, keys_to_send)
         else:
             raise InvalidResponseException("Invalid response to QMOD query received: {}".format(msg))
@@ -248,18 +249,47 @@ class QueryPIGS(Query):
                 "battery_charging_current": float(values_array[9]),
                 "battery_SOC": float(values_array[10]),
                 "inverter_heatsink_temp": float(values_array[11]),
-                "12": values_array[12],
-                "13": values_array[13],
-                "battery_voltage_scc_maybe": values_array[14],
+                "pv1_input_current": float(values_array[12]),
+                "pv1_input_voltage": float(values_array[13]),
+                "battery_voltage_scc_1": values_array[14],
                 "battery_discharging_current": float(values_array[15]),
-                "device_status_bitmap": values_array[16],
+                # process bitmat to get grid failure etc
+                "qpigs_device_status_bitmap": values_array[16],
                 "17": values_array[17],
                 "18": values_array[18],
-                "19": values_array[19],
-                "20": values_array[20],
+                "pv1_input_power": float(values_array[19]),
+                "qpigs_device_status_bitmap_2": values_array[20],
             }
             pprint.pprint(values)
-            keys_to_send =  ["grid_voltage", "grid_frequency", "output_voltage", "output_frequency", "output_va", "output_w", "output_load_percent", "bus_voltage", "battery_voltage", "battery_charging_current", "battery_SOC", "inverter_heatsink_temp", "battery_discharging_current"]
+            keys_to_send =  ["grid_voltage", "grid_frequency", "output_voltage", "output_frequency", "output_va", 
+                             "output_w", "output_load_percent", "bus_voltage", "battery_voltage", "battery_charging_current", 
+                             "battery_SOC", "inverter_heatsink_temp", "pv1_input_current", "pv1_input_voltage", 
+                             "battery_voltage_scc_1", "battery_discharging_current", "qpigs_device_status_bitmap", "pv1_input_power", 
+                             "qpigs_device_status_bitmap_2" ]
+            # keys_to_send.extend ([  "17", "18",])
+            self._publish_mqtt_from_dict(values, keys_to_send)
+            
+        else:
+            raise InvalidResponseException("Invalid response to QMOD query received: {}".format(msg))
+        return
+
+class QueryPIGS2(Query):
+    def __init__(self, connection):
+        Query.__init__(self, b"QPIGS2", connection)
+        return
+
+    def process_response(self, msg):
+        Query.process_response(self, msg)
+        # TODO: update this to make it easier to add different device versions
+        if len(msg) >= 15 and msg[0].to_bytes(1) == b'(':
+            values_array = msg[1:].decode('ascii').split(" ")
+            values = {
+                "pv2_input_current": float(values_array[0]),  
+                "pv2_input_voltage": float(values_array[1]),
+                "pv2_input_power": float(values_array[2])
+            }
+            pprint.pprint(values)
+            keys_to_send =  ["pv2_input_current", "pv2_input_voltage", "pv2_input_power"]
             self._publish_mqtt_from_dict(values, keys_to_send)
             
         else:
@@ -290,6 +320,36 @@ class QueryMode(Query):
         else:
             raise InvalidResponseException("Invalid response to QMOD query received: {}".format(msg))
         return
+
+class QueryTesting(Query):
+    def __init__(self, connection):
+        self._query = b"QS"
+        Query.__init__(self, self._query, connection)
+        return
+    
+    def process_response(self, msg):
+        print("Got a response for {} message {} it was: {}".format(self._query, self.get_key(), msg))
+        query = self._query.decode('ascii')
+        
+        # for space deliniated:
+        if len(msg) >= 10 and msg[0].to_bytes(1) == b'(':
+            values_array = msg[1:].decode('ascii').split(" ")
+            values = {}
+            keys_to_send = []
+            count = 0
+            for value in values_array:
+                key = "{}{}".format(query, count)
+                values[key] = value
+                keys_to_send.append(key)
+                count += 1
+
+            self._publish_mqtt_from_dict(values, keys_to_send)
+        
+        
+        else:
+            raise InvalidResponseException("Invalid response to {} query received: {}".format(self._query, msg))
+        return
+
 
 class QueryWarnings(Query):
     def __init__(self, connection):
@@ -458,7 +518,7 @@ class VoltronicConnection(threading.Thread):
                     self._to_send.append(QueryFirmware(self, b'2'))
                     self._to_send.append(QueryFirmware(self, b'3'))
                 else:
-                    for theclass in [QueryPIRI, QueryFlags, QueryPIGS, QueryMode, QueryWarnings]:
+                    for theclass in [QueryPIRI, QueryFlags, QueryPIGS, QueryPIGS2, QueryMode, QueryWarnings]:
                         self._to_send.append(theclass(self))
 
                 self._last_sent_time = time.time()

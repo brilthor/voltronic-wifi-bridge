@@ -4,6 +4,9 @@ Intercept the voltronic phone-home session for local management with mqtt and ot
 
 The inverters I have tested appear to phone home to ess.eybond.com on port 502 using a protocol similar to the one available on the serial port but wrapped in TCP and [some extra magic](Protocol.md)
 
+## Docker
+https://hub.docker.com/r/brilthor/voltronic-wifi-bridge
+
 
 ## Usage
 
@@ -49,3 +52,6 @@ Many Voltronic inverters use very similar protocols.  Yours may work automatical
 
 ## References
 https://github.com/manio/skymax-demo for CRC algorithm
+Update 2023-11:
+found more protocol documentation which is close:
+https://github.com/jblance/mpp-solar/blob/master/docs/protocols/PI30_Communication-Protocol-20150924-Customer.pdf
