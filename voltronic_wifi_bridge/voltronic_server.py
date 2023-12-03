@@ -6,6 +6,7 @@ import threading
 import time
 import random
 import pprint
+import json
 from voltronic_wifi_bridge import voltronic_tools
 
 class InvalidResponseException(Exception):
@@ -223,6 +224,32 @@ class QueryFlags(Query):
         Query.__init__(self, b"QFLAG", connection)
         return
 
+    def process_response(self, msg):
+        Query.process_response(self, msg)
+
+        mapping = {
+            'a' : "buzzer_enabled",
+            'b' : "overload_bypass_enabled",
+            'j' : "power_saving_enabled",
+            'k' : "lcd_menu_timeout_enabled",
+            'u' : "overload_restart_enabled",
+            'v' : "overtemp_restart_enabled",
+            'x' : "backlight_enabled",
+            'y' : "alarm_on_primary_source_interrupt_enabled",
+            'z' : "fault_code_record_enabled",
+        }
+        mqtt_outputs = {}
+        if len(msg) >= 5 and msg[0].to_bytes(1) == b'(':
+            enabled = msg[1:].decode('ascii').split("E", 1)[1].split("D", 1)[0]
+            disabled = msg[1:].decode('ascii').split("E", 1)[1].split("D", 1)[1]
+            for code, topic in mapping.items():
+                if code in enabled:
+                    mqtt_outputs[topic] = True
+                elif code in disabled:
+                    mqtt_outputs[topic] = False
+            # self._publish_mqtt_from_dict(mqtt_outputs)
+            self._connection.publish_message("flags", json.dumps(mqtt_outputs))
+
 class QueryPIGS(Query):
     def __init__(self, connection):
         Query.__init__(self, b"QPIGS", connection)
@@ -358,6 +385,48 @@ class QueryWarnings(Query):
         # individual bits are flag for warnings
         Query.__init__(self, b"QPIWS", connection)
         return
+
+    def process_response(self, msg):
+        Query.process_response(self, msg)
+
+        if len(msg) >= 5 and msg[0].to_bytes(1) == b'(':
+            bits = ["1" == val for val in msg[1:].decode('ascii')]
+            # offset the list to match the docs
+            bits.insert(0, None)
+            warnings = {
+                "inverter_fault" : bits[2],
+                "bus_over" : bits[3],
+                "bus_under" : bits[4],
+                "bus_soft_fail" : bits[5],
+                "line_fail" : bits[6],
+                "opv_short" : bits[7],
+                "inverter_voltage_low" : bits[8],
+                "inverter_voltage_high" : bits[9],
+                "over_temperature" : bits[10],
+                "fan_locked" : bits[11],
+                "battery_voltage_high" : bits[12],
+                "battery_low_alarm" : bits[13],
+                "battery_under_shutdown" : bits[15],
+                "over_load" : bits[17],
+                "eeprom_fault" : bits[18],
+                "inverter_over_current" : bits[19],
+                "inverter_soft_fail" : bits[20],
+                "self_test_fail" : bits[21],
+                "op_dc_voltage_over" : bits[22],
+                "bat_open" : bits[23],
+                "current_sensor_fail" : bits[24],
+                "battery_short" : bits[25],
+                "power_limit" : bits[26],
+                "pv_voltage_high_1" : bits[27],
+                "mptt_overload_fault_1" : bits[28],
+                "mppt_overload_warning_1" : bits[29],
+                "batter_too_low_to_charge_1" : bits[30],
+                "pv_voltage_high_2" : bits[31],
+                "mptt_overload_fault_2" : bits[32],
+                "mppt_overload_warning_2" : bits[33],
+                "batter_too_low_to_charge_2" : bits[34],
+            }
+            self._connection.publish_message("warnings", json.dumps(warnings))
 
 class VoltronicConnection(threading.Thread):
     def __init__(self, connection, address, mqtt_client=None):
