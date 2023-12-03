@@ -37,8 +37,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=edge,branch=main
-          flavor: | 
-            latest=true 
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
